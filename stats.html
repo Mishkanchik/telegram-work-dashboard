@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Статистика - WorkTracker</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div id="particles-js"></div>
+
+    <div class="page-wrapper">
+        <header class="header">
+            <div class="container header-inner">
+                <div class="logo">
+                    <span class="logo-icon">⌚</span>
+                    <span>WorkTracker</span>
+                </div>
+                <div class="header-user">
+                    <div class="user-info">
+                        <div class="user-name" id="userName">Завантаження...</div>
+                        <div class="user-role" id="userRole">Працівник</div>
+                    </div>
+                    <div class="avatar" id="userAvatar">?</div>
+                </div>
+            </div>
+        </header>
+
+        <main class="page-content">
+            <div class="container">
+                <h1 class="section-title"><i class="fas fa-chart-bar"></i> Моя статистика</h1>
+
+                <div class="glass-card mb-3">
+                    <div class="filters-row">
+                        <div class="filter-group">
+                            <label class="form-label">Місяць</label>
+                            <select name="month" class="form-select" id="monthSelect">
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stats-grid" id="statsGrid">
+                    <div class="stat-card blue fade-in-up">
+                        <div class="stat-icon">📋</div>
+                        <div class="stat-number" id="totalShifts">0</div>
+                        <div class="stat-label">Всього змін</div>
+                    </div>
+                    <div class="stat-card purple fade-in-up">
+                        <div class="stat-icon">⏱</div>
+                        <div class="stat-number" id="totalHours">0</div>
+                        <div class="stat-label">Відпрацьовано годин</div>
+                    </div>
+                    <div class="stat-card green fade-in-up">
+                        <div class="stat-icon">📈</div>
+                        <div class="stat-number" id="avgHours">0</div>
+                        <div class="stat-label">Середня зміна</div>
+                    </div>
+                    <div class="stat-card yellow fade-in-up">
+                        <div class="stat-icon">🌅</div>
+                        <div class="stat-number" id="morningShifts">0</div>
+                        <div class="stat-label">Ранкових змін</div>
+                    </div>
+                </div>
+
+                <div class="charts-grid">
+                    <div class="glass-card fade-in-up">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-chart-line"></i> Динаміка годин</h3>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="hoursChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="glass-card fade-in-up">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-chart-pie"></i> Розподіл змін</h3>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="shiftChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card mb-3">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-trophy"></i> Досягнення</h3>
+                    </div>
+                    <div class="achievements-grid" id="achievementsGrid">
+                    </div>
+                </div>
+
+                <div class="glass-card">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-history"></i> Історія змін</h3>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Дата</th>
+                                    <th>Зміна</th>
+                                    <th>Початок</th>
+                                    <th>Кінець</th>
+                                    <th>Години</th>
+                                </tr>
+                            </thead>
+                            <tbody id="shiftsTable">
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">Завантаження...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="glass-card mt-3">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-share-alt"></i> Реферальне посилання</h3>
+                    </div>
+                    <p class="text-muted mb-2">Запрошуйте колег приєднатися!</p>
+                    <div class="d-flex gap-1 align-center flex-wrap">
+                        <input type="text" class="form-input" id="refLink" readonly>
+                        <button class="btn btn-primary"
+                            onclick="copyToClipboard(document.getElementById('refLink').value)">
+                            <i class="fas fa-copy"></i> Копіювати
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <div class="container">
+                &copy; 2024 WorkTracker. Powered by Telegram.
+            </div>
+        </footer>
+    </div>
+
+    <div class="toast-container"></div>
+
+    <script src="js/config.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/stats.js"></script>
+</body>
+
+</html>

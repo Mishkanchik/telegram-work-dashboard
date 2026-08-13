@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WorkTracker - Облік робочих змін</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div id="particles-js"></div>
+
+    <div class="page-wrapper">
+        <header class="header">
+            <div class="container header-inner">
+                <div class="logo">
+                    <span class="logo-icon">⌚</span>
+                    <span>WorkTracker</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="page-content">
+            <div class="container">
+                <div class="hero">
+                    <h1 class="hero-title fade-in-up">WorkTracker</h1>
+                    <p class="hero-subtitle fade-in-up">Telegram-бот для обліку робочих змін</p>
+
+                    <div class="index-cards fade-in-up" id="mainCards">
+                        <a href="#" class="index-card" id="botLink">
+                            <div class="index-icon"><i class="fab fa-telegram"></i></div>
+                            <h3>Telegram Бот</h3>
+                            <p>Почніть роботу з ботом</p>
+                        </a>
+
+                        <a href="stats.html" class="index-card">
+                            <div class="index-icon"><i class="fas fa-chart-bar"></i></div>
+                            <h3>Статистика</h3>
+                            <p>Перегляд робочих змін</p>
+                        </a>
+
+                        <a href="admin.html" class="index-card">
+                            <div class="index-icon"><i class="fas fa-lock"></i></div>
+                            <h3>Адмін-панель</h3>
+                            <p>Керування командою</p>
+                        </a>
+                    </div>
+
+                    <div class="features fade-in-up">
+                        <h2 class="section-title">Можливості</h2>
+                        <div class="features-grid">
+                            <div class="feature-item">
+                                <i class="fas fa-clock"></i>
+                                <span>Таймер змін</span>
+                            </div>
+                            <div class="feature-item">
+                                <i class="fas fa-chart-line"></i>
+                                <span>Графіки статистики</span>
+                            </div>
+                            <div class="feature-item">
+                                <i class="fas fa-share-alt"></i>
+                                <span>Реферальна система</span>
+                            </div>
+                            <div class="feature-item">
+                                <i class="fas fa-trophy"></i>
+                                <span>Досягнення</span>
+                            </div>
+                            <div class="feature-item">
+                                <i class="fas fa-file-export"></i>
+                                <span>Експорт CSV</span>
+                            </div>
+                            <div class="feature-item">
+                                <i class="fas fa-mobile-alt"></i>
+                                <span>Адаптивний дизайн</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <div class="container">
+                &copy; 2024 WorkTracker. Powered by Telegram.
+            </div>
+        </footer>
+    </div>
+
+    <div class="toast-container"></div>
+
+    <script src="js/config.js"></script>
+    <script src="js/main.js"></script>
+    <script>
+        document.getElementById('botLink').href = 'https://t.me/' + (API_CONFIG.BOT_USERNAME || 'YourBotUsername');
+    </script>
+</body>
+
+</html>
