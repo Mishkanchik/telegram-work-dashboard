@@ -5,36 +5,26 @@
 ## Деплой на Vercel
 
 1. Підключіть цей репозиторій до Vercel
-2. Вкажіть Root Directory: `frontend`
+2. Root Directory: `/` (корінь)
 3. Framework Preset: Other
 4. Deploy
-
-### Налаштування змінних середовища
-
-У Vercel Dashboard додайте змінну:
-
-```
-NEXT_PUBLIC_API_URL=https://your-backend.onrender.com
-```
 
 ### Локальний запуск
 
 ```bash
-# Встановіть live-server або будь-який HTTP сервер
-npx live-server frontend
+npx live-server
 ```
 
 ## Структура
 
 ```
-frontend/
 ├── index.html          # Головна сторінка
 ├── stats.html          # Статистика користувача
 ├── admin.html          # Адмін-панель
 ├── css/
 │   └── style.css       # Стилі
 └── js/
-    ├── config.js       # Конфігурація API
+    ├── config.js       # Конфігурація API (BASE_URL бекенду)
     ├── main.js         # Загальні скрипти
     ├── stats.js        # Скрипти статистики
     └── admin.js        # Скрипти адмін-панелі
@@ -42,11 +32,12 @@ frontend/
 
 ## Налаштування
 
-Перед деплоєм відредагуйте `js/config.js`:
+`js/config.js` має вказувати на backend:
 
 ```javascript
 const API_CONFIG = {
-    BASE_URL: 'https://your-backend.onrender.com',
-    BOT_USERNAME: 'YourBotUsername',
-    BOT_TOKEN: 'YOUR_BOT_TOKEN_HERE'
+    BASE_URL: 'https://telegram-work-dashboard-back.onrender.com'
 };
+```
+
+Бекенд репозиторій: https://github.com/Mishkanchik/telegram-work-dashboard-back
