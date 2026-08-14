@@ -1,259 +1,235 @@
 // =============================================
-// ADMIN.JS - ADMIN PANEL PAGE
+// ADMIN.JS - ADMIN PANEL
 // =============================================
 
-let activityChart = null;
-let currentFilters = { month: '', search: '', shift_type: '' };
+let currentUser = null;
+let workersData = [];
 
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function() {
     initAdminPage();
 });
 
-function initAdminPage() {
-    const savedAuth = localStorage.getItem('admin_auth');
-
-    if (savedAuth === 'true') {
-        showAdminPanel();
+async function initAdminPage() {
+    // Перевіряємо, чи є пароль в URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const password = urlParams.get('password');
+    
+    if (password) {
+        // Якщо пароль є в URL — намагаємось завантажити дані
+        await loadAdminData(password);
     } else {
-        showAuthScreen();
-    }
-
-    setupEventListeners();
-}
-
-function setupEventListeners() {
-    const authForm = document.getElementById('authForm');
-    if (authForm) {
-        authForm.addEventListener('submit', handleAuth);
-    }
-
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', handleLogout);
-    }
-
-    const filtersBtn = document.getElementById('applyFiltersBtn');
-    if (filtersBtn) {
-        filtersBtn.addEventListener('click', applyFilters);
-    }
-
-    const resetBtn = document.getElementById('resetFiltersBtn');
-    if (resetBtn) {
-        resetBtn.addEventListener('click', resetFilters);
-    }
-
-    const exportBtn = document.getElementById('exportBtn');
-    if (exportBtn) {
-        exportBtn.addEventListener('click', exportCSV);
+        // Показуємо форму входу
+        showLoginForm();
     }
 }
 
-function handleAuth(e) {
-    e.preventDefault();
-
-    const password = e.target.password.value;
-
-    apiRequest('/api/admin/auth.php', {
-        method: 'POST',
-        body: JSON.stringify({ password: password })
-    }).then(function (data) {
-        if (data.success) {
-            localStorage.setItem('admin_auth', 'true');
-            showAdminPanel();
-        }
-    }).catch(function (error) {
-        document.getElementById('authError').textContent = 'Невірний пароль';
-        document.getElementById('authError').classList.remove('hidden');
-    });
+function showLoginForm() {
+    document.getElementById('loginForm').style.display = 'block';
+    document.getElementById('adminContent').style.display = 'none';
 }
 
-function handleLogout() {
-    localStorage.removeItem('admin_auth');
-    showAuthScreen();
-}
-
-function showAuthScreen() {
-    document.getElementById('authScreen').classList.remove('hidden');
-    document.getElementById('adminPanel').classList.add('hidden');
-}
-
-function showAdminPanel() {
-    document.getElementById('authScreen').classList.add('hidden');
-    document.getElementById('adminPanel').classList.remove('hidden');
-
-    populateMonthSelect('monthSelect');
-    loadAdminData();
-
-    setInterval(updateLiveTimers, 60000);
-}
-
-async function loadAdminData() {
+async function login() {
+    const password = document.getElementById('passwordInput').value;
+    if (!password) {
+        showToast('Введіть пароль', 'error');
+        return;
+    }
+    
+    // Перевіряємо пароль через API
     try {
-        const stats = await apiRequest('/api/admin/stats.php?month=' + currentFilters.month);
-        renderStats(stats.globalStats);
-        renderLeaderboard(stats.topWorkers);
-        renderWorkersTable(stats.allWorkers);
-        renderActiveSessions(stats.activeSessions);
-        renderActivityChart(stats.hourlyActivity);
+        const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/stats.php?password=${password}`);
+        if (response.status === 401) {
+            showToast('Невірний пароль', 'error');
+            return;
+        }
+        
+        if (!response.ok) {
+            showToast('Помилка підключення', 'error');
+            return;
+        }
+        
+        // Пароль правильний — завантажуємо дані
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('adminContent').style.display = 'block';
+        
+        // Оновлюємо URL з паролем (щоб при перезавантаженні не питати знову)
+        const newUrl = window.location.pathname + '?password=' + encodeURIComponent(password);
+        window.history.pushState({}, '', newUrl);
+        
+        await loadAdminData(password);
+        
     } catch (error) {
+        console.error('Login error:', error);
+        showToast('Помилка з\'єднання з сервером', 'error');
+    }
+}
+
+async function loadAdminData(password) {
+    try {
+        const url = `${API_CONFIG.BASE_URL}/api/admin/stats.php?password=${encodeURIComponent(password)}`;
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        workersData = data.workers || [];
+        
+        renderSummary(data.summary);
+        renderTopWorkers(data.top_workers || []);
+        renderWorkersTable(workersData);
+        renderActiveShifts(data.active_shifts || []);
+        
+        showToast('Дані завантажено успішно', 'success');
+        
+    } catch (error) {
+        console.error('Load admin data error:', error);
         showToast('Помилка завантаження даних', 'error');
     }
 }
 
-function applyFilters() {
-    currentFilters.month = document.getElementById('monthSelect').value;
-    currentFilters.search = document.getElementById('searchInput').value;
-    currentFilters.shift_type = document.getElementById('shiftFilter').value;
-
-    loadAdminData();
+function renderSummary(summary) {
+    if (!summary) return;
+    
+    document.getElementById('totalWorkers').textContent = summary.total_workers || 0;
+    document.getElementById('activeToday').textContent = summary.active_today || 0;
+    document.getElementById('monthShifts').textContent = summary.month_shifts || 0;
+    document.getElementById('totalHours').textContent = summary.total_hours || 0;
+    document.getElementById('avgHours').textContent = summary.avg_hours || 0;
 }
 
-function resetFilters() {
-    currentFilters = { month: '', search: '', shift_type: '' };
-    document.getElementById('searchInput').value = '';
-    document.getElementById('shiftFilter').value = '';
-    document.getElementById('monthSelect').value = document.querySelector('#monthSelect option').value;
-
-    loadAdminData();
-}
-
-function exportCSV() {
-    window.open(API_CONFIG.BASE_URL + '/api/admin/export.php?month=' + currentFilters.month, '_blank');
-}
-
-function renderStats(stats) {
-    document.getElementById('activeWorkers').textContent = stats.active_workers;
-    document.getElementById('totalShifts').textContent = stats.total_shifts;
-    document.getElementById('totalHours').textContent = Math.round(stats.total_hours);
-    document.getElementById('avgHours').textContent = Math.round(stats.avg_hours * 10) / 10;
-}
-
-function renderLeaderboard(workers) {
-    const container = document.getElementById('leaderboard');
+function renderTopWorkers(topWorkers) {
+    const container = document.getElementById('topWorkers');
     if (!container) return;
-
-    if (workers.length === 0) {
-        container.innerHTML = '<p class="text-muted">Немає даних</p>';
+    
+    if (!topWorkers || topWorkers.length === 0) {
+        container.innerHTML = '<p class="text-muted">Немає даних про працівників</p>';
         return;
     }
-
-    const maxHours = Math.max.apply(null, workers.map(function (w) { return w.total_hours; }));
-
+    
+    const medals = ['🥇', '🥈', '🥉'];
     container.innerHTML = '';
-
-    workers.forEach(function (w, i) {
-        const place = i + 1;
-        const medal = place === 1 ? '🥇' : (place === 2 ? '🥈' : (place === 3 ? '🥉' : ''));
-        const className = place === 1 ? 'first' : (place === 2 ? 'second' : (place === 3 ? 'third' : ''));
-        const progress = maxHours > 0 ? Math.round(w.total_hours / maxHours * 100) : 0;
-
-        const item = document.createElement('div');
-        item.className = 'leaderboard-item ' + className;
-        item.innerHTML =
-            '<span class="medal">' + medal + '</span>' +
-            '<div class="leaderboard-info">' +
-            '<div class="leaderboard-name">' + w.full_name + '</div>' +
-            '<div class="leaderboard-meta">' + w.total_shifts + ' змін | ' + w.morning_shifts + ' ранкових | ' + w.evening_shifts + ' вечірніх</div>' +
-            '</div>' +
-            '<div class="leaderboard-hours">' + Math.round(w.total_hours * 10) / 10 + ' год</div>' +
-            '<div class="leaderboard-progress">' +
-            '<div class="progress-bar"><div class="progress-fill" style="width: ' + progress + '%"></div></div>' +
-            '</div>';
-        container.appendChild(item);
+    
+    topWorkers.forEach(function(worker, index) {
+        const card = document.createElement('div');
+        card.className = 'top-worker-card';
+        card.innerHTML = `
+            <div class="top-worker-medal">${medals[index] || '🏅'}</div>
+            <div class="top-worker-info">
+                <div class="top-worker-name">${worker.full_name}</div>
+                <div class="top-worker-stats">
+                    <span>📋 ${worker.total_shifts} змін</span>
+                    <span>⏱ ${worker.total_hours} год</span>
+                </div>
+            </div>
+        `;
+        container.appendChild(card);
     });
 }
 
 function renderWorkersTable(workers) {
     const tbody = document.getElementById('workersTable');
     if (!tbody) return;
-
-    if (workers.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">Немає даних</td></tr>';
+    
+    if (!workers || workers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">Немає працівників</td></tr>';
         return;
     }
-
+    
     tbody.innerHTML = '';
-
-    workers.forEach(function (w, i) {
+    
+    workers.forEach(function(w) {
         const tr = document.createElement('tr');
-        tr.innerHTML =
-            '<td>' + (i + 1) + '</td>' +
-            '<td><strong>' + w.full_name + '</strong>' + (w.username ? '<br><small class="text-muted">@' + w.username + '</small>' : '') + '</td>' +
-            '<td>' + w.total_shifts + '</td>' +
-            '<td>' + w.morning_shifts + '</td>' +
-            '<td>' + w.evening_shifts + '</td>' +
-            '<td><strong>' + Math.round(w.total_hours * 10) / 10 + '</strong></td>' +
-            '<td>' + Math.round(w.avg_hours * 10) / 10 + '</td>' +
-            '<td><span class="badge ' + (w.role === 'admin' ? 'badge-admin' : 'badge-worker') + '">' +
-            (w.role === 'admin' ? '🔐 Адмін' : '👤 Працівник') + '</span></td>';
+        tr.innerHTML = `
+            <td><strong>${w.full_name}</strong></td>
+            <td>${w.total_shifts}</td>
+            <td>${w.morning_shifts}</td>
+            <td>${w.evening_shifts}</td>
+            <td><strong>${w.total_hours}</strong></td>
+            <td>${w.avg_hours}</td>
+            <td><span class="badge ${w.role === 'admin' ? 'badge-admin' : 'badge-worker'}">${w.role === 'admin' ? 'Адмін' : 'Працівник'}</span></td>
+        `;
         tbody.appendChild(tr);
     });
 }
 
-function renderActiveSessions(sessions) {
-    const card = document.getElementById('activeSessionsCard');
-    const list = document.getElementById('activeSessionsList');
-
-    if (!sessions || sessions.length === 0) {
-        card.classList.add('hidden');
+function renderActiveShifts(activeShifts) {
+    const container = document.getElementById('activeShifts');
+    if (!container) return;
+    
+    if (!activeShifts || activeShifts.length === 0) {
+        container.innerHTML = '<p class="text-muted">Немає активних змін</p>';
         return;
     }
-
-    card.classList.remove('hidden');
-    list.innerHTML = '';
-
-    sessions.forEach(function (s) {
-        const item = document.createElement('div');
-        item.className = 'session-card';
-        item.innerHTML =
-            '<div class="online-dot"></div>' +
-            '<div class="session-info">' +
-            '<div class="session-name">' + s.full_name + '</div>' +
-            '<div class="session-shift">' + (s.shift_type === 'morning' ? '🌅 Ранкова' : '🌇 Вечірня') + '</div>' +
-            '</div>' +
-            '<div class="session-timer" data-start="' + s.start_timestamp + '">--:--</div>';
-        list.appendChild(item);
+    
+    container.innerHTML = '';
+    
+    activeShifts.forEach(function(s) {
+        const div = document.createElement('div');
+        div.className = 'active-shift-item';
+        div.innerHTML = `
+            <span class="active-dot"></span>
+            <span class="active-shift-name">${s.full_name}</span>
+            <span class="active-shift-time">${s.current_hours} год</span>
+        `;
+        container.appendChild(div);
     });
 }
 
-function renderActivityChart(hourlyData) {
-    const ctx = document.getElementById('activityChart');
-    if (!ctx) return;
-
-    if (activityChart) activityChart.destroy();
-
-    activityChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: Array.from({ length: 24 }, function (_, i) { return i + ':00'; }),
-            datasets: [{
-                label: 'Початок змін',
-                data: hourlyData,
-                backgroundColor: 'rgba(0, 212, 255, 0.4)',
-                borderColor: 'rgba(0, 212, 255, 1)',
-                borderWidth: 1,
-                borderRadius: 4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-                y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
-                x: { grid: { display: false }, ticks: { color: '#94a3b8', maxRotation: 45 } }
-            }
-        }
-    });
+// Фільтрація працівників
+function filterWorkers() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const shiftFilter = document.getElementById('shiftFilter').value;
+    
+    let filtered = workersData;
+    
+    // Фільтр по імені
+    if (search) {
+        filtered = filtered.filter(w => 
+            w.full_name.toLowerCase().includes(search) || 
+            w.username.toLowerCase().includes(search)
+        );
+    }
+    
+    // Фільтр по змінах
+    if (shiftFilter === 'morning') {
+        filtered = filtered.filter(w => w.morning_shifts > 0);
+    } else if (shiftFilter === 'evening') {
+        filtered = filtered.filter(w => w.evening_shifts > 0);
+    }
+    
+    renderWorkersTable(filtered);
 }
 
-function updateLiveTimers() {
-    document.querySelectorAll('.session-timer').forEach(function (el) {
-        const start = new Date(el.dataset.start);
-        const now = new Date();
-        const diff = Math.floor((now - start) / 1000);
-        const hours = Math.floor(diff / 3600);
-        const mins = Math.floor((diff % 3600) / 60);
-        el.textContent = hours + ' год ' + mins + ' хв';
+// Експорт CSV
+function exportCSV() {
+    if (!workersData || workersData.length === 0) {
+        showToast('Немає даних для експорту', 'error');
+        return;
+    }
+    
+    const headers = ['Ім\'я', 'Змін', 'Ранкові', 'Вечірні', 'Години', 'Середнє'];
+    const rows = workersData.map(w => [
+        w.full_name,
+        w.total_shifts,
+        w.morning_shifts,
+        w.evening_shifts,
+        w.total_hours,
+        w.avg_hours
+    ]);
+    
+    let csv = headers.join(',') + '\n';
+    rows.forEach(row => {
+        csv += row.join(',') + '\n';
     });
+    
+    // Завантаження файлу
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'workers_export_' + new Date().toISOString().slice(0, 10) + '.csv';
+    link.click();
+    
+    showToast('Експорт виконано успішно', 'success');
 }
