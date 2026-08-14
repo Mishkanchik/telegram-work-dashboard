@@ -1538,3 +1538,174 @@ tbody td {
         justify-content: center;
     }
 }
+
+
+
+/* =============================================
+   ADMIN PANEL STYLES
+   ============================================= */
+
+.btn-back {
+    color: #94a3b8;
+    text-decoration: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    transition: all 0.3s;
+}
+
+.btn-back:hover {
+    color: #fff;
+    background: rgba(255,255,255,0.1);
+}
+
+/* Топ працівників */
+.top-workers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    padding: 8px 0;
+}
+
+.top-worker-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 12px;
+    transition: all 0.3s;
+}
+
+.top-worker-card:hover {
+    background: rgba(255,255,255,0.1);
+    transform: translateY(-2px);
+}
+
+.top-worker-medal {
+    font-size: 28px;
+}
+
+.top-worker-info {
+    flex: 1;
+}
+
+.top-worker-name {
+    font-weight: 600;
+    color: #e2e8f0;
+}
+
+.top-worker-stats {
+    display: flex;
+    gap: 12px;
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+/* Активні зміни */
+.active-shifts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.active-shift-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px;
+}
+
+.active-dot {
+    width: 10px;
+    height: 10px;
+    background: #10b981;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+.active-shift-time {
+    margin-left: auto;
+    color: #94a3b8;
+    font-size: 14px;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.2); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+/* Бейджі ролей */
+.badge-admin {
+    background: rgba(124, 58, 237, 0.3);
+    color: #a78bfa;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+}
+
+.badge-worker {
+    background: rgba(0, 212, 255, 0.15);
+    color: #00d4ff;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+}
+
+/* Форма входу */
+#loginForm {
+    padding: 40px;
+}
+
+#loginForm h2 {
+    margin-bottom: 24px;
+    color: #e2e8f0;
+}
+
+#loginForm .form-group {
+    margin-bottom: 16px;
+}
+
+#loginForm .form-input {
+    width: 100%;
+    padding: 12px 16px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    color: #e2e8f0;
+    font-size: 16px;
+}
+
+#loginForm .form-input:focus {
+    outline: none;
+    border-color: #00d4ff;
+}
+
+#loginForm .btn-block {
+    width: 100%;
+    justify-content: center;
+}
+
+.text-error {
+    color: #ef4444;
+    text-align: center;
+    padding: 8px;
+}
+
+.filters-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.filters-row .filter-group {
+    flex: 1;
+    min-width: 150px;
+}
+
+.filters-row .btn {
+    flex-shrink: 0;
+}
