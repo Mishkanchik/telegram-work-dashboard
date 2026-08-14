@@ -2,65 +2,58 @@
 // ADMIN.JS - ADMIN PANEL
 // =============================================
 
-let currentUser = null;
 let workersData = [];
 
 document.addEventListener('DOMContentLoaded', function() {
-    initAdminPage();
-});
-
-async function initAdminPage() {
-    // Перевіряємо, чи є пароль в URL
     const urlParams = new URLSearchParams(window.location.search);
     const password = urlParams.get('password');
     
     if (password) {
-        // Якщо пароль є в URL — намагаємось завантажити дані
-        await loadAdminData(password);
-    } else {
-        // Показуємо форму входу
-        showLoginForm();
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('adminContent').style.display = 'block';
+        loadAdminData(password);
     }
-}
-
-function showLoginForm() {
-    document.getElementById('loginForm').style.display = 'block';
-    document.getElementById('adminContent').style.display = 'none';
-}
+});
 
 async function login() {
     const password = document.getElementById('passwordInput').value;
+    const errorDiv = document.getElementById('loginError');
+    
     if (!password) {
-        showToast('Введіть пароль', 'error');
+        errorDiv.textContent = 'Введіть пароль';
+        errorDiv.style.display = 'block';
         return;
     }
     
-    // Перевіряємо пароль через API
     try {
-        const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/stats.php?password=${password}`);
+        const url = `${API_CONFIG.BASE_URL}/api/admin/stats.php?password=${encodeURIComponent(password)}`;
+        const response = await fetch(url);
+        
         if (response.status === 401) {
-            showToast('Невірний пароль', 'error');
+            errorDiv.textContent = '❌ Невірний пароль';
+            errorDiv.style.display = 'block';
             return;
         }
         
         if (!response.ok) {
-            showToast('Помилка підключення', 'error');
-            return;
+            throw new Error('Помилка підключення');
         }
         
-        // Пароль правильний — завантажуємо дані
+        // Успішний вхід
         document.getElementById('loginForm').style.display = 'none';
         document.getElementById('adminContent').style.display = 'block';
+        document.getElementById('loginError').style.display = 'none';
         
-        // Оновлюємо URL з паролем (щоб при перезавантаженні не питати знову)
+        // Оновлюємо URL з паролем
         const newUrl = window.location.pathname + '?password=' + encodeURIComponent(password);
         window.history.pushState({}, '', newUrl);
         
-        await loadAdminData(password);
+        const data = await response.json();
+        renderAdminData(data);
         
     } catch (error) {
-        console.error('Login error:', error);
-        showToast('Помилка з\'єднання з сервером', 'error');
+        errorDiv.textContent = '❌ ' + error.message;
+        errorDiv.style.display = 'block';
     }
 }
 
@@ -70,48 +63,51 @@ async function loadAdminData(password) {
         const response = await fetch(url);
         
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            throw new Error('Помилка завантаження даних');
         }
         
         const data = await response.json();
-        workersData = data.workers || [];
-        
-        renderSummary(data.summary);
-        renderTopWorkers(data.top_workers || []);
-        renderWorkersTable(workersData);
-        renderActiveShifts(data.active_shifts || []);
-        
-        showToast('Дані завантажено успішно', 'success');
+        renderAdminData(data);
         
     } catch (error) {
-        console.error('Load admin data error:', error);
-        showToast('Помилка завантаження даних', 'error');
+        console.error('Load error:', error);
+        document.getElementById('workersTable').innerHTML = 
+            '<tr><td colspan="7" class="text-center text-muted">❌ Помилка завантаження даних</td></tr>';
     }
 }
 
-function renderSummary(summary) {
-    if (!summary) return;
+function renderAdminData(data) {
+    workersData = data.workers || [];
     
-    document.getElementById('totalWorkers').textContent = summary.total_workers || 0;
-    document.getElementById('activeToday').textContent = summary.active_today || 0;
-    document.getElementById('monthShifts').textContent = summary.month_shifts || 0;
-    document.getElementById('totalHours').textContent = summary.total_hours || 0;
-    document.getElementById('avgHours').textContent = summary.avg_hours || 0;
+    // Статистика
+    document.getElementById('totalWorkers').textContent = data.summary.total_workers || 0;
+    document.getElementById('activeToday').textContent = data.summary.active_today || 0;
+    document.getElementById('monthShifts').textContent = data.summary.month_shifts || 0;
+    document.getElementById('totalHours').textContent = data.summary.total_hours || 0;
+    
+    // Топ працівників
+    renderTopWorkers(data.top_workers || []);
+    
+    // Активні зміни
+    renderActiveShifts(data.active_shifts || []);
+    
+    // Таблиця
+    renderWorkersTable(workersData);
 }
 
 function renderTopWorkers(topWorkers) {
     const container = document.getElementById('topWorkers');
     if (!container) return;
     
-    if (!topWorkers || topWorkers.length === 0) {
-        container.innerHTML = '<p class="text-muted">Немає даних про працівників</p>';
+    if (topWorkers.length === 0) {
+        container.innerHTML = '<p class="text-muted">Немає даних</p>';
         return;
     }
     
     const medals = ['🥇', '🥈', '🥉'];
     container.innerHTML = '';
     
-    topWorkers.forEach(function(worker, index) {
+    topWorkers.forEach((worker, index) => {
         const card = document.createElement('div');
         card.className = 'top-worker-card';
         card.innerHTML = `
@@ -128,18 +124,39 @@ function renderTopWorkers(topWorkers) {
     });
 }
 
+function renderActiveShifts(activeShifts) {
+    const container = document.getElementById('activeShifts');
+    if (!container) return;
+    
+    if (activeShifts.length === 0) {
+        container.innerHTML = '<p class="text-muted">Немає активних змін</p>';
+        return;
+    }
+    
+    container.innerHTML = '';
+    activeShifts.forEach(s => {
+        const item = document.createElement('div');
+        item.className = 'active-shift-item';
+        item.innerHTML = `
+            <span class="active-dot"></span>
+            <span>${s.full_name}</span>
+            <span class="active-shift-time">${s.current_hours} год</span>
+        `;
+        container.appendChild(item);
+    });
+}
+
 function renderWorkersTable(workers) {
     const tbody = document.getElementById('workersTable');
     if (!tbody) return;
     
-    if (!workers || workers.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">Немає працівників</td></tr>';
+    if (workers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Немає працівників</td></tr>';
         return;
     }
     
     tbody.innerHTML = '';
-    
-    workers.forEach(function(w) {
+    workers.forEach(w => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td><strong>${w.full_name}</strong></td>
@@ -154,37 +171,12 @@ function renderWorkersTable(workers) {
     });
 }
 
-function renderActiveShifts(activeShifts) {
-    const container = document.getElementById('activeShifts');
-    if (!container) return;
-    
-    if (!activeShifts || activeShifts.length === 0) {
-        container.innerHTML = '<p class="text-muted">Немає активних змін</p>';
-        return;
-    }
-    
-    container.innerHTML = '';
-    
-    activeShifts.forEach(function(s) {
-        const div = document.createElement('div');
-        div.className = 'active-shift-item';
-        div.innerHTML = `
-            <span class="active-dot"></span>
-            <span class="active-shift-name">${s.full_name}</span>
-            <span class="active-shift-time">${s.current_hours} год</span>
-        `;
-        container.appendChild(div);
-    });
-}
-
-// Фільтрація працівників
 function filterWorkers() {
     const search = document.getElementById('searchInput').value.toLowerCase();
     const shiftFilter = document.getElementById('shiftFilter').value;
     
     let filtered = workersData;
     
-    // Фільтр по імені
     if (search) {
         filtered = filtered.filter(w => 
             w.full_name.toLowerCase().includes(search) || 
@@ -192,7 +184,6 @@ function filterWorkers() {
         );
     }
     
-    // Фільтр по змінах
     if (shiftFilter === 'morning') {
         filtered = filtered.filter(w => w.morning_shifts > 0);
     } else if (shiftFilter === 'evening') {
@@ -202,9 +193,8 @@ function filterWorkers() {
     renderWorkersTable(filtered);
 }
 
-// Експорт CSV
 function exportCSV() {
-    if (!workersData || workersData.length === 0) {
+    if (!workersData.length) {
         showToast('Немає даних для експорту', 'error');
         return;
     }
@@ -219,17 +209,28 @@ function exportCSV() {
         w.avg_hours
     ]);
     
-    let csv = headers.join(',') + '\n';
+    let csv = '\uFEFF' + headers.join(',') + '\n';
     rows.forEach(row => {
         csv += row.join(',') + '\n';
     });
     
-    // Завантаження файлу
-    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = 'workers_export_' + new Date().toISOString().slice(0, 10) + '.csv';
     link.click();
     
-    showToast('Експорт виконано успішно', 'success');
+    showToast('Експорт виконано', 'success');
+}
+
+function showToast(message, type) {
+    const container = document.querySelector('.toast-container');
+    if (!container) return;
+    
+    const toast = document.createElement('div');
+    toast.className = 'toast toast-' + (type || 'info');
+    toast.textContent = message;
+    container.appendChild(toast);
+    
+    setTimeout(() => toast.remove(), 3000);
 }
